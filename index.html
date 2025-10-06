@@ -3,12 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <title>Quick Redirect UI</title>
+    <meta name="color-scheme" content="dark light">
     <style>
-        body { font-family: Arial, sans-serif; padding: 40px; background: #f4f4f4; }
-        .container { max-width: 400px; margin: auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 8px #ccc; }
-        button { display: block; width: 100%; margin: 12px 0; padding: 12px; font-size: 16px; border: none; border-radius: 5px; background: #0078d4; color: #fff; cursor: pointer; transition: background 0.2s; }
-        button:hover { background: #005fa3; }
+        body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            background: #181a1b;
+            color: #e4e6eb;
+            transition: background 0.3s, color 0.3s;
+        }
+        .container {
+            max-width: 400px;
+            margin: auto;
+            background: #23272f;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px #0008;
+        }
+        button {
+            display: block;
+            width: 100%;
+            margin: 12px 0;
+            padding: 14px;
+            font-size: 17px;
+            border: none;
+            border-radius: 6px;
+            background: #0078d4;
+            color: #fff;
+            cursor: pointer;
+            transition: background 0.2s, box-shadow 0.2s;
+            box-shadow: 0 2px 6px #0004;
+        }
+        button:hover {
+            background: #005fa3;
+            box-shadow: 0 4px 12px #0006;
+        }
+        @media (prefers-color-scheme: light) {
+            body { background: #f4f4f4; color: #222; }
+            .container { background: #fff; box-shadow: 0 2px 8px #ccc; }
+        }
     </style>
+    <script>
+        async function serveGithubHtml() {
+            const url = "https://raw.githubusercontent.com/Enazzzz/SSWebsite/main/index.html";
+            try {
+                const response = await fetch(url);
+                const html = await response.text();
+                const win = window.open("", "_blank");
+                win.document.open();
+                win.document.write(html);
+                win.document.close();
+            } catch (e) {
+                alert("Failed to load HTML from GitHub.");
+            }
+        }
+    </script>
 </head>
 <body>
     <div class="container">
