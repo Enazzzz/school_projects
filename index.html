@@ -154,11 +154,20 @@
     async function openViewer(repo) {
       const iframe = document.getElementById("iframeView");
       const viewer = document.getElementById("viewer");
-
-      // Try live site first (Vercel or GitHub Pages)
-      const homepage = repo.homepage || `https://${repo.name}.vercel.app`;
+    
+      // Try a live site first
+      let homepage = repo.homepage || `https://${repo.name}.vercel.app`;
+    
+      // Test if it embeds successfully
+      try {
+        const res = await fetch(homepage, { method: "HEAD" });
+        if (!res.ok) throw new Error();
+      } catch {
+        // Fallback: use raw GitHub HTML if available
+        homepage = `https://raw.githubusercontent.com/${repo.owner.login}/${repo.name}/main/index.html`;
+      }
+    
       iframe.src = homepage;
-
       viewer.style.display = "flex";
     }
 
