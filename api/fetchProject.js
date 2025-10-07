@@ -1,57 +1,61 @@
+// /api/fetchRepo.js
+import fetch from "node-fetch";
+
+const cache = {}; // simple in-memory cache
+
+async function getRepoFiles(owner, repo, path = "") {
+  const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+  const res = await fetch(apiUrl);
+  if (!res.ok) throw new Error(`GitHub API error: ${res.status}`);
+  const data = await res.json();
+
+  let files = [];
+  for (const item of data) {
+    if (item.type === "file") {
+      files.push({
+        name: item.name,
+        path: item.path,
+        download_url: item.download_url
+      });
+    } else if (item.type === "dir") {
+      const subFiles = await getRepoFiles(owner, repo, item.path);
+      files = files.concat(subFiles);
+    }
+  }
+  return files;
+}
+
 export default async function handler(req, res) {
-  const { url } = req.query;
-  if (!url) return res.status(400).json({ error: "Missing URL" });
+  const { owner, repo } = req.query;
+  if (!owner || !repo) return res.status(400).json({ error: "Missing owner or repo" });
+
+  const cacheKey = `${owner}/${repo}`;
+  if (cache[cacheKey]) {
+    return res.status(200).json(cache[cacheKey]);
+  }
 
   try {
-    const decodedUrl = decodeURIComponent(url);
-    const response = await fetch(decodedUrl);
-    if (!response.ok) throw new Error("Failed to fetch HTML");
-
-    const contentType = response.headers.get("content-type") || "";
-
-    if (!contentType.includes("text/html")) {
-      // Just return non-HTML assets directly
-      const buffer = await response.arrayBuffer();
-      res.setHeader("Content-Type", contentType || "application/octet-stream");
-      return res.status(200).send(Buffer.from(buffer));
-    }
-
-    let html = await response.text();
-    const base = new URL(decodedUrl);
-
-    // Helper: rewrite any relative path
-    const rewriteAsset = (tag, attr, useProxyForHTML = false) => {
-      html = html.replace(
-        new RegExp(`<${tag}([^>]*?)${attr}="(.*?)"`, "g"),
-        (match, a, value) => {
-          if (!value || value.startsWith("http") || value.startsWith("#") || value.startsWith("mailto:"))
-            return match;
-
-          const resolved = new URL(value, base).href;
-
-          if (useProxyForHTML) {
-            // HTML pages go through proxy
-            return `<${tag}${a} ${attr}="/api/fetchHTML?url=${encodeURIComponent(resolved)}"`;
-          } else {
-            // Assets go directly to raw.githubusercontent.com
-            return `<${tag}${a} ${attr}="${resolved}"`;
-          }
-        }
-      );
+    const files = await getRepoFiles(owner, repo);
+    const result = {
+      html: {},
+      css: [],
+      js: [],
+      images: []
     };
 
-    // Rewrite HTML links through proxy
-    ["a:href", "link:href", "script:src", "img:src", "video:src", "audio:src", "source:src", "object:src"].forEach(
-      (pair) => {
-        const [tag, attr] = pair.split(":");
-        rewriteAsset(tag, attr, tag === "a"); // only <a> goes through proxy
-      }
-    );
+    for (const f of files) {
+      const ext = f.name.split(".").pop().toLowerCase();
+      if (ext === "html") result.html[f.name] = f.download_url;
+      else if (ext === "css") result.css.push(f.download_url);
+      else if (ext === "js") result.js.push(f.download_url);
+      else if (["png", "jpg", "jpeg", "gif", "svg", "webp"].includes(ext)) result.images.push(f.download_url);
+    }
 
-    res.setHeader("Content-Type", "text/html");
-    return res.status(200).send(html);
+    cache[cacheKey] = result; // cache in memory
+    return res.status(200).json(result);
   } catch (err) {
     console.error(err);
-    return res.status(500).send(`Error: ${err.message}`);
+    return res.status(500).json({ error: err.message });
   }
 }
+
