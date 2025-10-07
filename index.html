@@ -1,66 +1,72 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Zane’s Project Hub</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body { font-family: system-ui, sans-serif; background:#181a1b; color:#e4e6eb; margin:0; padding:0; display:flex; flex-direction:column; align-items:center; min-height:100vh; }
-    header { margin:50px 0 20px; text-align:center; }
-    h1 { margin-bottom:10px; }
-    #projects { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px,1fr)); gap:20px; width:90%; max-width:900px; padding:20px; }
-    .project-link { background:#23272f; padding:18px; border-radius:10px; text-align:center; cursor:pointer; transition: transform 0.2s, background 0.2s; }
-    .project-link:hover { background:#0078d4; transform:translateY(-3px); }
-    #viewer { position:fixed; inset:0; display:none; flex-direction:column; z-index:999; background:#000; }
-    #backBtn { position:absolute; top:15px; left:15px; padding:10px 18px; border:none; border-radius:6px; background:#0078d4; color:#fff; cursor:pointer; z-index:1000; }
-    #backBtn:hover { background:#005fa3; }
-    #iframeView { flex:1; width:100%; border:none; }
-  </style>
+<meta charset="UTF-8">
+<title>Zane's Project Hub</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  body { font-family: system-ui, sans-serif; background:#181a1b; color:#e4e6eb; margin:0; padding:0; display:flex; flex-direction:column; align-items:center; min-height:100vh; }
+  header { margin:50px 0 20px; text-align:center; }
+  #projects { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px,1fr)); gap:20px; width:90%; max-width:900px; padding:20px; }
+  .project-link { background:#23272f; padding:18px; border-radius:10px; text-align:center; cursor:pointer; transition: transform 0.2s, background 0.2s; }
+  .project-link:hover { background:#0078d4; transform:translateY(-3px); }
+  #viewer { position:fixed; inset:0; display:none; flex-direction:column; z-index:999; background:#000; }
+  #backBtn { position:absolute; top:15px; left:15px; padding:10px 18px; border:none; border-radius:6px; background:#0078d4; color:#fff; cursor:pointer; z-index:1000; }
+  #backBtn:hover { background:#005fa3; }
+  #iframeView { flex:1; width:100%; border:none; }
+</style>
 </head>
 <body>
-  <header>
-    <h1>Zane’s Project Hub</h1>
-    <p>Click a project to load it fullscreen.</p>
-  </header>
 
-  <main id="projects">
-    <p>Loading projects...</p>
-  </main>
+<header>
+  <h1>Zane’s Project Hub</h1>
+  <p>Click a project to load it fullscreen.</p>
+</header>
 
-  <div id="viewer">
-    <button id="backBtn" onclick="closeViewer()">← Back</button>
-    <iframe id="iframeView"></iframe>
-  </div>
+<main id="projects">
+  <p>Loading projects...</p>
+</main>
 
-  <script>
-    const projects = [
-      { name: "SSWebsite", owner: "Enazzzz", repo: "SSWebsite", path: "index.html" },
-      { name: "TypeScript App", owner: "Enazzzz", repo: "TypeScript", path: "dist-apps-script/index.html" }
-    ];
+<div id="viewer">
+  <button id="backBtn" onclick="closeViewer()">← Back</button>
+  <iframe id="iframeView"></iframe>
+</div>
 
-    const container = document.getElementById("projects");
-    container.innerHTML = "";
-    projects.forEach(p => {
-      const link = document.createElement("div");
-      link.className = "project-link";
-      link.textContent = p.name;
-      link.onclick = () => openViewer(p);
-      container.appendChild(link);
-    });
+<script>
+const projects = [
+  {
+    name: "SSWebsite",
+    url: "https://raw.githubusercontent.com/Enazzzz/SSWebsite/main/index.html"
+  },
+  {
+    name: "TypeScript App",
+    url: "https://raw.githubusercontent.com/Enazzzz/TypeScript/main/dist-apps-script/index.html"
+  }
+];
 
-    async function openViewer(project) {
-      const iframe = document.getElementById("iframeView");
-      const viewer = document.getElementById("viewer");
-    
-      // Use the new enhanced proxy
-      iframe.src = `/api/fetchProjectFull?owner=${project.owner}&repo=${project.repo}&path=${encodeURIComponent(project.path)}`;
-      viewer.style.display = "flex";
-    }
+const container = document.getElementById("projects");
+container.innerHTML = "";
+projects.forEach(p => {
+  const link = document.createElement("div");
+  link.className = "project-link";
+  link.textContent = p.name;
+  link.onclick = () => openViewer(p.url);
+  container.appendChild(link);
+});
 
-    function closeViewer() {
-      document.getElementById("iframeView").src = "";
-      document.getElementById("viewer").style.display = "none";
-    }
-  </script>
+function openViewer(url) {
+  const iframe = document.getElementById("iframeView");
+  const viewer = document.getElementById("viewer");
+
+  iframe.src = `/api/fetchProject?url=${encodeURIComponent(url)}`;
+  viewer.style.display = "flex";
+}
+
+function closeViewer() {
+  document.getElementById("iframeView").src = "";
+  document.getElementById("viewer").style.display = "none";
+}
+</script>
+
 </body>
 </html>
