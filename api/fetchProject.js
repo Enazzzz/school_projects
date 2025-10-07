@@ -10,10 +10,10 @@ export default async function handler(req, res) {
 
     const contentType = response.headers.get("content-type") || "";
 
-    // If HTML, rewrite asset paths
     if (contentType.includes("text/html")) {
       let html = await response.text();
 
+      // Rewrite relative links/scripts/assets to go through the proxy
       const rewriteAsset = (tag, attr) =>
         html.replace(new RegExp(`<${tag}([^>]*?)${attr}="(.*?)"`, "g"), (match, a, value) => {
           if (!value || value.startsWith("http")) return match;
@@ -21,19 +21,16 @@ export default async function handler(req, res) {
           return `<${tag}${a} ${attr}="${newUrl}"`;
         });
 
-      html = rewriteAsset("link", "href");
-      html = rewriteAsset("script", "src");
-      html = rewriteAsset("img", "src");
-      html = rewriteAsset("video", "src");
-      html = rewriteAsset("audio", "src");
-      html = rewriteAsset("source", "src");
-      html = rewriteAsset("object", "src");
+      ["link:href", "script:src", "img:src", "video:src", "audio:src", "source:src", "object:src"].forEach(pair => {
+        const [tag, attr] = pair.split(":");
+        html = rewriteAsset(tag, attr);
+      });
 
       res.setHeader("Content-Type", "text/html");
       return res.status(200).send(html);
     }
 
-    // For other files (images, CSS, JS)
+    // For other assets, detect type based on extension
     const ext = url.split(".").pop().toLowerCase();
     let mime = "application/octet-stream";
     if (ext === "js") mime = "application/javascript";
@@ -47,9 +44,10 @@ export default async function handler(req, res) {
 
     const arrayBuffer = await response.arrayBuffer();
     res.setHeader("Content-Type", mime);
-    res.status(200).send(Buffer.from(arrayBuffer));
+    res.setHeader("Cache-Control", "public, max-age=3600"); // optional caching
+    return res.status(200).send(Buffer.from(arrayBuffer));
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message });
   }
 }
