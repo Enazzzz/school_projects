@@ -5,12 +5,13 @@ export default async function handler(req, res) {
   try {
     const decodedUrl = decodeURIComponent(url);
 
+    // Only allow raw.githubusercontent URLs
     if (!decodedUrl.includes("raw.githubusercontent.com")) {
       return res.status(400).send("Only raw.githubusercontent.com URLs allowed");
     }
 
     const response = await fetch(decodedUrl);
-    if (!response.ok) throw new Error(`Failed to fetch: ${response.status}`);
+    if (!response.ok) throw new Error(`Failed to fetch: ${response.status} (${response.statusText})`);
 
     // Determine content type
     let contentType = "application/octet-stream";
@@ -22,9 +23,11 @@ export default async function handler(req, res) {
     else if (decodedUrl.endsWith(".gif")) contentType = "image/gif";
     else if (decodedUrl.endsWith(".svg")) contentType = "image/svg+xml";
     else if (decodedUrl.endsWith(".json")) contentType = "application/json";
+    else if (decodedUrl.endsWith(".woff") || decodedUrl.endsWith(".woff2")) contentType = "font/woff2";
 
     res.setHeader("Content-Type", contentType);
 
+    // Compute base URL for relative paths
     const baseUrl = decodedUrl.substring(0, decodedUrl.lastIndexOf("/") + 1);
 
     // HTML rewriting
@@ -49,18 +52,18 @@ export default async function handler(req, res) {
       return res.status(200).send(css);
     }
 
-    // JS rewriting for simple relative images or JSON paths
+    // JS rewriting
     if (contentType === "text/javascript") {
       let js = await response.text();
 
-      // new Image().src = 'path'
+      // Rewrite new Image().src = 'relative/path'
       js = js.replace(/new\s+Image\(\)\.src\s*=\s*['"](.*?)['"]/g, (match, path) => {
         if (!path || path.startsWith("http") || path.startsWith("data:")) return match;
         const resolved = new URL(path, baseUrl).href;
         return `new Image().src="/api/proxy?url=${encodeURIComponent(resolved)}"`;
       });
 
-      // fetch('path')
+      // Rewrite fetch('relative/path')
       js = js.replace(/fetch\(['"](.*?)['"]/g, (match, path) => {
         if (!path || path.startsWith("http")) return match;
         const resolved = new URL(path, baseUrl).href;
@@ -70,12 +73,12 @@ export default async function handler(req, res) {
       return res.status(200).send(js);
     }
 
-    // Other files (images, JSON)
+    // Other assets (images, fonts, JSON)
     const buffer = await response.arrayBuffer();
     return res.status(200).send(Buffer.from(buffer));
 
   } catch (err) {
     console.error(err);
-    return res.status(500).send(`Error: ${err.message}`);
+    return res.status(500).send(`Proxy Error: ${err.message}`);
   }
 }
