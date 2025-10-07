@@ -51,8 +51,9 @@
     async function openViewer(project) {
       const iframe = document.getElementById("iframeView");
       const viewer = document.getElementById("viewer");
-
-      iframe.src = `/api/fetchProject?owner=${project.owner}&repo=${project.repo}&path=${encodeURIComponent(project.path)}`;
+    
+      // Use the new enhanced proxy
+      iframe.src = `/api/fetchProjectFull?owner=${project.owner}&repo=${project.repo}&path=${encodeURIComponent(project.path)}`;
       viewer.style.display = "flex";
     }
 
