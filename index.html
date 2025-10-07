@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Zane's Project Hub</title>
+<title>Zane's GitHub Project Hub</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
   body { font-family: system-ui,sans-serif; background:#181a1b; color:#e4e6eb; margin:0; display:flex; flex-direction:column; align-items:center; min-height:100vh;}
@@ -32,30 +32,33 @@
 
 <script>
 const projects = [
-  {
-    name: "SSWebsite",
-    url: "https://raw.githubusercontent.com/Enazzzz/SSWebsite/main/index.html"
-  },
-  {
-    name: "TypeScript App",
-    url: "https://raw.githubusercontent.com/Enazzzz/TypeScript/main/dist-apps-script/index.html"
-  }
+  { owner: "Enazzzz", repo: "SSWebsite" },
+  { owner: "Enazzzz", repo: "TypeScript" }
 ];
 
-const container = document.getElementById("projects");
-container.innerHTML = "";
-projects.forEach(p => {
-  const link = document.createElement("div");
-  link.className = "project-link";
-  link.textContent = p.name;
-  link.onclick = () => openViewer(p.url);
-  container.appendChild(link);
-});
+async function loadProjects() {
+  const container = document.getElementById("projects");
+  for (const p of projects) {
+    try {
+      const res = await fetch(`/api/fetchRepo?owner=${p.owner}&repo=${p.repo}`);
+      const data = await res.json();
+      const firstHTML = Object.values(data.html)[0]; // index.html
+      if (!firstHTML) continue;
+
+      const div = document.createElement("div");
+      div.className = "project-link";
+      div.textContent = p.repo;
+      div.onclick = () => openViewer(firstHTML);
+      container.appendChild(div);
+    } catch(e) {
+      console.error(e);
+    }
+  }
+}
 
 function openViewer(url) {
   const iframe = document.getElementById("iframeView");
   const viewer = document.getElementById("viewer");
-
   iframe.src = `/api/fetchHTML?url=${encodeURIComponent(url)}`;
   viewer.style.display = "flex";
 }
@@ -64,6 +67,8 @@ function closeViewer() {
   document.getElementById("iframeView").src = "";
   document.getElementById("viewer").style.display = "none";
 }
+
+loadProjects();
 </script>
 </body>
 </html>
