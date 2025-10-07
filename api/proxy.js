@@ -1,6 +1,4 @@
 // /api/proxy.js
-import fetch from "node-fetch";
-
 export default async function handler(req, res) {
   const { url, base } = req.query;
   if (!url) return res.status(400).send("Missing URL");
