@@ -5,104 +5,22 @@
   <title>Zane’s Project Hub</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    :root {
-      color-scheme: dark light;
-    }
-    body {
-      font-family: system-ui, sans-serif;
-      margin: 0;
-      padding: 0;
-      background: #181a1b;
-      color: #e4e6eb;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-      transition: background 0.3s, color 0.3s;
-    }
-    header {
-      margin: 50px 0 20px;
-      text-align: center;
-    }
-    h1 {
-      margin-bottom: 10px;
-    }
-    #projects {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 20px;
-      width: 90%;
-      max-width: 900px;
-      padding: 20px;
-    }
-    .project-link {
-      display: block;
-      background: #23272f;
-      padding: 18px;
-      border-radius: 10px;
-      color: #fff;
-      text-decoration: none;
-      text-align: center;
-      font-size: 1.1rem;
-      box-shadow: 0 4px 10px #0006;
-      transition: transform 0.2s, background 0.2s;
-      cursor: pointer;
-    }
-    .project-link:hover {
-      background: #0078d4;
-      transform: translateY(-3px);
-    }
-
-    /* Fullscreen embed mode */
-    #viewer {
-      position: fixed;
-      inset: 0;
-      background: #000;
-      display: none;
-      flex-direction: column;
-      z-index: 999;
-    }
-    #viewer iframe {
-      flex: 1;
-      border: none;
-      width: 100%;
-      height: 100%;
-    }
-    #backBtn {
-      background: #0078d4;
-      border: none;
-      color: #fff;
-      padding: 10px 18px;
-      border-radius: 6px;
-      font-size: 1rem;
-      cursor: pointer;
-      position: absolute;
-      top: 15px;
-      left: 15px;
-      z-index: 1000;
-      box-shadow: 0 3px 6px #0008;
-    }
-    #backBtn:hover {
-      background: #005fa3;
-    }
-
-    footer {
-      margin: 40px 0 20px;
-      font-size: 0.9rem;
-      color: #777;
-    }
-
-    @media (prefers-color-scheme: light) {
-      body { background: #f4f4f4; color: #222; }
-      .project-link { background: #fff; color: #222; box-shadow: 0 2px 8px #ccc; }
-      .project-link:hover { background: #0078d4; color: #fff; }
-    }
+    body { font-family: system-ui, sans-serif; background:#181a1b; color:#e4e6eb; margin:0; padding:0; display:flex; flex-direction:column; align-items:center; min-height:100vh; }
+    header { margin:50px 0 20px; text-align:center; }
+    h1 { margin-bottom:10px; }
+    #projects { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px,1fr)); gap:20px; width:90%; max-width:900px; padding:20px; }
+    .project-link { background:#23272f; padding:18px; border-radius:10px; text-align:center; cursor:pointer; transition: transform 0.2s, background 0.2s; }
+    .project-link:hover { background:#0078d4; transform:translateY(-3px); }
+    #viewer { position:fixed; inset:0; display:none; flex-direction:column; z-index:999; background:#000; }
+    #backBtn { position:absolute; top:15px; left:15px; padding:10px 18px; border:none; border-radius:6px; background:#0078d4; color:#fff; cursor:pointer; z-index:1000; }
+    #backBtn:hover { background:#005fa3; }
+    #iframeView { flex:1; width:100%; border:none; }
   </style>
 </head>
 <body>
   <header>
     <h1>Zane’s Project Hub</h1>
-    <p>Click a project to launch it fullscreen.</p>
+    <p>Click a project to load it fullscreen.</p>
   </header>
 
   <main id="projects">
@@ -111,74 +29,37 @@
 
   <div id="viewer">
     <button id="backBtn" onclick="closeViewer()">← Back</button>
-    <iframe id="iframeView" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+    <iframe id="iframeView"></iframe>
   </div>
 
-  <footer>
-    <p>Powered by GitHub API • Hosted on Vercel</p>
-  </footer>
-
   <script>
-    async function loadProjects() {
-      const container = document.getElementById("projects");
-      try {
-        const res = await fetch("https://api.github.com/users/Enazzzz/repos");
-        const repos = await res.json();
+    const projects = [
+      { name: "SSWebsite", owner: "Enazzzz", repo: "SSWebsite", path: "index.html" },
+      { name: "TypeScript App", owner: "Enazzzz", repo: "TypeScript", path: "dist-apps-script/index.html" }
+    ];
 
-        // Sort by last update
-        repos.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+    const container = document.getElementById("projects");
+    container.innerHTML = "";
+    projects.forEach(p => {
+      const link = document.createElement("div");
+      link.className = "project-link";
+      link.textContent = p.name;
+      link.onclick = () => openViewer(p);
+      container.appendChild(link);
+    });
 
-        // Filter for website projects
-        const websites = repos.filter(r =>
-          !r.fork && (r.name.toLowerCase().includes("website") || r.topics?.includes("school"))
-        );
-
-        container.innerHTML = "";
-        if (websites.length === 0) {
-          container.innerHTML = "<p>No website projects found.</p>";
-          return;
-        }
-
-        for (const repo of websites) {
-          const link = document.createElement("div");
-          link.className = "project-link";
-          link.textContent = repo.name;
-          link.onclick = () => openViewer(repo);
-          container.appendChild(link);
-        }
-      } catch (err) {
-        container.innerHTML = "<p>Failed to load projects.</p>";
-      }
-    }
-
-    async function openViewer(repo) {
+    async function openViewer(project) {
       const iframe = document.getElementById("iframeView");
       const viewer = document.getElementById("viewer");
-    
-      // Try a live site first
-      let homepage = repo.homepage || `https://${repo.name}.vercel.app`;
-    
-      // Test if it embeds successfully
-      try {
-        const res = await fetch(homepage, { method: "HEAD" });
-        if (!res.ok) throw new Error();
-      } catch {
-        // Fallback: use raw GitHub HTML if available
-        homepage = `https://raw.githubusercontent.com/${repo.owner.login}/${repo.name}/main/index.html`;
-      }
-    
-      iframe.src = homepage;
+
+      iframe.src = `/api/fetchProject?owner=${project.owner}&repo=${project.repo}&path=${encodeURIComponent(project.path)}`;
       viewer.style.display = "flex";
     }
 
     function closeViewer() {
-      const viewer = document.getElementById("viewer");
-      const iframe = document.getElementById("iframeView");
-      iframe.src = ""; // clear for performance
-      viewer.style.display = "none";
+      document.getElementById("iframeView").src = "";
+      document.getElementById("viewer").style.display = "none";
     }
-
-    loadProjects();
   </script>
 </body>
 </html>
