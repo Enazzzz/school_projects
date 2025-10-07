@@ -1,4 +1,3 @@
-// /api/fetchHTML.js
 export default async function handler(req, res) {
   const { url } = req.query;
   if (!url) return res.status(400).json({ error: "Missing URL" });
@@ -8,18 +7,16 @@ export default async function handler(req, res) {
     if (!response.ok) throw new Error("Failed to fetch HTML");
 
     let html = await response.text();
+    const base = new URL(url);
 
-    // Rewrite CSS/JS/img/video src/href to use raw.githubusercontent.com directly
     const rewriteAsset = (tag, attr) =>
       html.replace(new RegExp(`<${tag}([^>]*?)${attr}="(.*?)"`, "g"), (match, a, value) => {
-        if (!value || value.startsWith("http")) return match;
-        // Resolve relative URLs based on HTML file location
-        const base = new URL(url);
-        const newUrl = new URL(value, base).href;
+        if (!value || value.startsWith("http") || value.startsWith("mailto:") || value.startsWith("#")) return match;
+        const newUrl = `/api/fetchHTML?url=${encodeURIComponent(new URL(value, base).href)}`;
         return `<${tag}${a} ${attr}="${newUrl}"`;
       });
 
-    ["link:href", "script:src", "img:src", "video:src", "audio:src", "source:src", "object:src"].forEach(pair => {
+    ["link:href", "script:src", "img:src", "video:src", "audio:src", "source:src", "object:src", "a:href"].forEach(pair => {
       const [tag, attr] = pair.split(":");
       html = rewriteAsset(tag, attr);
     });
