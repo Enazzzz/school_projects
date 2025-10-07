@@ -1,45 +1,30 @@
-import fetch from "node-fetch";
-
+// /api/fetchProject.js
 export default async function handler(req, res) {
-  const { owner, repo, path } = req.query;
+  const { url } = req.query;
 
-  if (!owner || !repo || !path) {
-    return res.status(400).json({ error: "Missing parameters" });
-  }
-
-  const GITHUB_TOKEN = process.env.GITHUB_TOKEN; // optional for private repos
-  const headers = {
-    Accept: "application/vnd.github.v3+json",
-    ...(GITHUB_TOKEN && { Authorization: `token ${GITHUB_TOKEN}` }),
-  };
-
-  async function fetchFile(filePath) {
-    const url = `https://api.github.com/repos/${owner}/${repo}/contents/${filePath}?ref=main`;
-    const response = await fetch(url, { headers });
-    const data = await response.json();
-    if (!data.content) throw new Error(`Failed to fetch ${filePath}`);
-    return Buffer.from(data.content, "base64").toString("utf-8");
-  }
+  if (!url) return res.status(400).json({ error: "Missing URL" });
 
   try {
-    let html = await fetchFile(path);
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("Failed to fetch file");
 
-    // Rewrite linked CSS files
-    html = html.replace(/<link\s+([^>]*?)href="(.*?)"/g, (match, attr, href) => {
-      if (href.startsWith("http")) return match; // external CSS
-      const newHref = `/api/fetchProjectFull?owner=${owner}&repo=${repo}&path=${encodeURIComponent(href)}`;
-      return `<link ${attr} href="${newHref}"`;
-    });
+    const html = await response.text();
 
-    // Rewrite JS files
-    html = html.replace(/<script\s+([^>]*?)src="(.*?)"/g, (match, attr, src) => {
-      if (src.startsWith("http")) return match; // external JS
-      const newSrc = `/api/fetchProjectFull?owner=${owner}&repo=${repo}&path=${encodeURIComponent(src)}`;
-      return `<script ${attr} src="${newSrc}"`;
-    });
+    // Rewrite relative CSS/JS URLs to go through the same proxy
+    const rewritten = html
+      .replace(/<link\s+([^>]*?)href="(.*?)"/g, (match, attr, href) => {
+        if (href.startsWith("http")) return match;
+        const newHref = `/api/fetchProject?url=${encodeURIComponent(new URL(href, url).href)}`;
+        return `<link ${attr} href="${newHref}"`;
+      })
+      .replace(/<script\s+([^>]*?)src="(.*?)"/g, (match, attr, src) => {
+        if (src.startsWith("http")) return match;
+        const newSrc = `/api/fetchProject?url=${encodeURIComponent(new URL(src, url).href)}`;
+        return `<script ${attr} src="${newSrc}"`;
+      });
 
     res.setHeader("Content-Type", "text/html");
-    res.status(200).send(html);
+    res.status(200).send(rewritten);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
