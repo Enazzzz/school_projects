@@ -79,7 +79,7 @@ export default function Home({ projects = [], error }, { theme }) {
 
   return (
     <div className="min-h-screen bg-bg text-slate-100">
-      <Navbar name={name} tagline={tagline} theme={theme} />
+      <Navbar name={name} tagline={tagline} />
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
         <section className="grid gap-6 grid-cols-1 lg:grid-cols-3 items-start">
           <div className="lg:col-span-1">
