@@ -5,6 +5,7 @@
 /* custom */
 html, body, #__next {
   height: 100%;
+  scroll-behavior: smooth;
 }
 body.dark {
   background: linear-gradient(180deg, #05060a 0%, #0b0f13 100%);

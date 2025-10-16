@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-
+//hi
 export default function ProjectCard({ project }) {
   return (
     <motion.li
