@@ -10,16 +10,11 @@ export default function ProjectCard({ project }) {
       whileHover={{ scale: 1.04 }}
       className="relative overflow-hidden rounded-2xl p-6 bg-[rgba(30,0,0,0.6)] backdrop-blur-lg border border-red-700/40 shadow-lg hover:shadow-[0_0_20px_rgba(255,0,0,0.5)] transition-shadow duration-500"
     >
-      {/* Subtle moving gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-red-900 via-black to-red-800 opacity-20 animate-slow-move -z-10 rounded-2xl"></div>
 
-      {/* Project Name */}
       <h3 className="text-xl font-semibold text-red-300">{project.name}</h3>
-
-      {/* Description */}
       <p className="mt-2 text-gray-300 text-sm">{project.description || 'No description available'}</p>
 
-      {/* Buttons */}
       <div className="flex gap-3 mt-4 flex-wrap">
         {project.live && (
           <a
@@ -41,7 +36,6 @@ export default function ProjectCard({ project }) {
         </a>
       </div>
 
-      {/* Stats */}
       <div className="flex justify-between mt-4 text-gray-400 text-xs">
         <span>{project.stars != null ? `★ ${project.stars}` : '★ —'}</span>
         <span>{project.language || '—'}</span>

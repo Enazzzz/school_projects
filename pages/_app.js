@@ -1,27 +1,15 @@
-import '../styles/globals.css'
-import { useEffect, useState } from 'react'
+import '../styles/globals.css';
+import { useEffect } from 'react';
 
-export default function App({ Component, pageProps }) {
-  const [dark, setDark] = useState(true)
-
+function MyApp({ Component, pageProps }) {
+  // Apply dark mode from localStorage
   useEffect(() => {
-    // default to dark; respect saved preference if any
-    const saved = localStorage.getItem('theme')
-    const useDark = saved ? saved === 'dark' : true
-    setDark(useDark)
-    document.documentElement.classList.toggle('dark', useDark)
-  }, [])
+    const saved = localStorage.getItem('theme');
+    const dark = saved ? saved === 'dark' : true;
+    document.documentElement.classList.toggle('dark', dark);
+  }, []);
 
-  function toggleTheme() {
-    const next = !dark
-    setDark(next)
-    document.documentElement.classList.toggle('dark', next)
-    localStorage.setItem('theme', next ? 'dark' : 'light')
-  }
-
-  return (
-    <div className={dark ? 'dark' : ''}>
-      <Component {...pageProps} theme={{ dark, toggleTheme }} />
-    </div>
-  )
+  return <Component {...pageProps} />;
 }
+
+export default MyApp;
